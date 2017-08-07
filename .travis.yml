@@ -5,10 +5,10 @@ script:
   - mkdir build
   - cd build
   - cmake .. && make
-script:
-  - brew update # see note below
-  - brew install cgal
-  - brew install geos
+# script:
+  # - brew update # see note below
+  # - brew install cgal
+  # - brew install geos
 matrix:
   include:
   - os: osx
