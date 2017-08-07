@@ -1,0 +1,16 @@
+language: cpp
+compiler:
+  - clang
+script:
+  - mkdir build
+  - cd build
+  - cmake .. && make
+before_install:
+  - brew update # see note below
+  - brew install cgal
+  - brew install geos
+matrix:
+  include:
+    - os: osx
+      osx_image: xcode8
+      env: PYTHON=2.7 CPP=11 CLANG
