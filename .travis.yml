@@ -11,6 +11,6 @@ before_install:
   - brew install geos
 matrix:
   include:
-    - os: osx
-      osx_image: xcode8
-      env: PYTHON=2.7 CPP=11 CLANG
+  - os: osx
+    osx_image: xcode8
+    env: PYTHON=2.7 CPP=11 CLANG
