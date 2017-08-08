@@ -1,16 +1,19 @@
 language: cpp
 compiler:
   - clang
+  - gcc
 script:
   - mkdir build
   - cd build
   - cmake .. && make
-# script:
-  # - brew update # see note below
-  # - brew install cgal
-  # - brew install geos
 matrix:
   include:
   - os: osx
     osx_image: xcode8
-    env: PYTHON=2.7 CPP=11 CLANG
+    env: CPP=11 CLANG
+  - os: linux
+    env: CPP=11 GCC=4.8
+    addons:
+      apt:
+        packages: [g++-4.8, cmake, libcgal-dev, libgeos]  
+        # sources: [ubuntu-toolchain-r-test, kubuntu-backports, deadsnakes, george-edison55-precise-backports]
