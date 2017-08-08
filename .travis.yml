@@ -15,8 +15,8 @@ matrix:
   - os: osx
     osx_image: xcode8
     env: CPP=11 CLANG
-  - os: linux
-    env: CPP=11 GCC=4.8
+  # - os: linux
+  #   env: CPP=11 GCC=4.8
     # addons:
     #   apt:
     #     packages: [g++-4.8, cmake, libcgal-dev, libgeos-dev]  
