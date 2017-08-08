@@ -3,6 +3,7 @@ compiler:
   - clang
   - gcc
 before_install:
+  - if [ $TRAVIS_OS_NAME = linux ]; then sudo add-apt-repository ppa:nextgis/ppa; fi
   - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get -qq update; fi
   - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get install -y libcgal-dev  libgeos-dev; fi
 script:
