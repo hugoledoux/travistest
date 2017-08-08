@@ -16,7 +16,7 @@ matrix:
     env: CPP=11 CLANG
   - os: linux
     env: CPP=11 GCC=4.8
-    addons:
-      apt:
-        packages: [g++-4.8, cmake, libcgal-dev, libgeos]  
-        # sources: [ubuntu-toolchain-r-test, kubuntu-backports, deadsnakes, george-edison55-precise-backports]
+    # addons:
+    #   apt:
+    #     packages: [g++-4.8, cmake, libcgal-dev, libgeos-dev]  
+    #     # sources: [ubuntu-toolchain-r-test, kubuntu-backports, deadsnakes, george-edison55-precise-backports]
