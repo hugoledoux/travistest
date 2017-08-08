@@ -37,7 +37,8 @@ if ( NOT GEOS_FOUND )
   message(SEND_ERROR "val3dity requires the GEOS library")
 endif()
 
-include_directories( ${GEOS_INCLUDE_DIR}, include, ${CMAKE_SOURCE_DIR}/thirdparty )
+include_directories( ${GEOS_INCLUDE_DIR} )
+include_directories( ${CMAKE_SOURCE_DIR}/thirdparty )
 
 FILE(GLOB_RECURSE THIRDPARTY thirdparty/*.cpp)
 add_library(thirdparty STATIC ${THIRDPARTY})
@@ -45,7 +46,6 @@ add_library(thirdparty STATIC ${THIRDPARTY})
 file(GLOB SRC_FILES src/*.cpp)
 add_executable(val3dity ${SRC_FILES})
 
-add_to_cached_list( CGAL_EXECUTABLE_TARGETS val3dity )
 
 target_link_libraries(val3dity ${CGAL_LIBRARIES} ${CGAL_3RD_PARTY_LIBRARIES} ${GEOS_LIBRARY} thirdparty)
 
