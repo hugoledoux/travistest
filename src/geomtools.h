@@ -1,26 +1,29 @@
 /*
- val3dity - Copyright (c) 2011-2016, Hugo Ledoux.  All rights reserved.
- 
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions are met:
-     * Redistributions of source code must retain the above copyright
-       notice, this list of conditions and the following disclaimer.
-     * Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
-     * Neither the name of the authors nor the
-       names of its contributors may be used to endorse or promote products
-       derived from this software without specific prior written permission.
+  val3dity 
 
- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- DISCLAIMED. IN NO EVENT SHALL HUGO LEDOUX BE LIABLE FOR ANY
- DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+  Copyright (c) 2011-2017, 3D geoinformation research group, TU Delft  
+
+  This file is part of val3dity.
+
+  val3dity is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  val3dity is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with val3dity.  If not, see <http://www.gnu.org/licenses/>.
+
+  For any information or further details about the use of val3dity, contact
+  Hugo Ledoux
+  <h.ledoux@tudelft.nl>
+  Faculty of Architecture & the Built Environment
+  Delft University of Technology
+  Julianalaan 134, Delft 2628BL, the Netherlands
 */
 
 #ifndef __val3dity__geomtools__
@@ -34,12 +37,15 @@ namespace val3dity
 //-- misc
 #define PI 3.14159265
 
+CgalPolyhedron::Plane_3  get_best_fitted_plane(const std::vector< Point3 > &lsPts);
+
 bool    cmpPoint3(Point3 &p1, Point3 &p2, double tol);
-int     projection_plane(const std::vector< Point3 > &lsPts, const std::vector<int> &ids);
-bool    create_polygon(const std::vector<Point3>& lsPts, const std::vector<int>& ids, Polygon &pgn);
-bool    is_face_planar_distance2plane(const std::vector<Point3> &pts, double& value, float tolerance);
+void    create_cgal_polygon(const std::vector<Point3>& lsPts, const std::vector<int>& ids, const CgalPolyhedron::Plane_3 &plane, Polygon &outpgn);
+bool    is_face_planar_distance2plane(const std::vector<Point3> &pts, const CgalPolyhedron::Plane_3 &plane, double& value, float tolerance);
 bool    is_face_planar_normals(const std::vector<int*> &trs, const std::vector<Point3>& lsPts, double& value, float angleTolerance);
-bool    polygon_normal(const std::vector< Point3 > &lsPts, const std::vector<int> &ids, Vector &n);
+
+void mark_domains(CT& ct);
+void mark_domains(CT& ct, CT::Face_handle start, int index, std::list<CT::Edge>& border);
 
 Nef_polyhedron* dilate_nef_polyhedron(Nef_polyhedron* nef, float r);
 Nef_polyhedron* erode_nef_polyhedron (Nef_polyhedron* nef, float r);

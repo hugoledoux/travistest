@@ -1,39 +1,41 @@
-#ifndef VAL3DITY_VALIDATE_DEFS_H
-#define VAL3DITY_VALIDATE_DEFS_H
-
 /*
- val3dity - Copyright (c) 2011-2016, Hugo Ledoux.  All rights reserved.
- 
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions are met:
-     * Redistributions of source code must retain the above copyright
-       notice, this list of conditions and the following disclaimer.
-     * Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
-     * Neither the name of the authors nor the
-       names of its contributors may be used to endorse or promote products
-       derived from this software without specific prior written permission.
+  val3dity 
 
- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- DISCLAIMED. IN NO EVENT SHALL HUGO LEDOUX BE LIABLE FOR ANY
- DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+  Copyright (c) 2011-2017, 3D geoinformation research group, TU Delft  
+
+  This file is part of val3dity.
+
+  val3dity is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  val3dity is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with val3dity.  If not, see <http://www.gnu.org/licenses/>.
+
+  For any information or further details about the use of val3dity, contact
+  Hugo Ledoux
+  <h.ledoux@tudelft.nl>
+  Faculty of Architecture & the Built Environment
+  Delft University of Technology
+  Julianalaan 134, Delft 2628BL, the Netherlands
 */
 
+#ifndef VAL3DITY_VALIDATE_DEFS_H
+#define VAL3DITY_VALIDATE_DEFS_H
 
 // CGAL kernel
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Polyhedron_3.h>
 #include <CGAL/basic.h>
-#include <CGAL/Triangulation_vertex_base_with_info_2.h>
-#include <CGAL/Constrained_triangulation_plus_2.h>
+#include <CGAL/Triangulation_vertex_base_with_id_2.h>
+#include <CGAL/Triangulation_face_base_with_info_2.h>
 #include <CGAL/Polygon_2.h>
 
 #include <CGAL/Nef_polyhedron_3.h>
@@ -46,6 +48,15 @@
 namespace val3dity
 {
 
+struct FaceInfo2
+{
+  FaceInfo2() {}
+  int nesting_level;
+  bool in_domain() {
+    return nesting_level % 2 == 1;
+  }
+};  
+
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 
 //
@@ -55,17 +66,18 @@ typedef K::Vector_3                 Vector;
 typedef K::Triangle_3               Triangle;
 typedef K::Tetrahedron_3            Tetrahedron;
 typedef K::Plane_3                  Plane;
+typedef CGAL::Polygon_2<K>          Polygon;
 typedef CGAL::Polyhedron_3<K>       CgalPolyhedron;
 
 
 // CGAL typedefs
-typedef CGAL::Triangulation_vertex_base_with_info_2 <unsigned,K>  Vb;
-typedef CGAL::Constrained_triangulation_face_base_2<K>            Fb;
+typedef CGAL::Triangulation_vertex_base_with_id_2 <K>             Vb;
+typedef CGAL::Triangulation_face_base_with_info_2<FaceInfo2, K>   Fbb;
+typedef CGAL::Constrained_triangulation_face_base_2<K, Fbb>       Fb;
 typedef CGAL::Triangulation_data_structure_2<Vb,Fb>               TDS;
 typedef CGAL::Exact_intersections_tag                             Itag;
-typedef CGAL::Constrained_triangulation_2<K, TDS, Itag>           CTa;
-typedef CGAL::Constrained_triangulation_plus_2<CTa>               CT;
-typedef CGAL::Polygon_2<K> Polygon;
+typedef CGAL::Constrained_Delaunay_triangulation_2<K, TDS, Itag>  CT;
+
 
 //-- Nef requires EPEC (exact-predicates & exact-construction) and thus diff kernels
 typedef CGAL::Exact_predicates_exact_constructions_kernel   KE;
@@ -87,15 +99,17 @@ typedef enum
   MULTISOLID       = 2,
   COMPOSITESURFACE = 3,
   MULTISURFACE     = 4,
+  ALL              = 5,
 } Primitive3D;
 
 typedef enum
 {
   GML   = 0,
-  OBJ   = 1,
-  POLY  = 2,
-  OFF   = 3,
-  OTHER = 4,
+  JSON  = 1,
+  OBJ   = 2,
+  POLY  = 3,
+  OFF   = 4,
+  OTHER = 5,
 } InputTypes;
 
 } // namespace val3dity

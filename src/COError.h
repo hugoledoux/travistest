@@ -26,44 +26,33 @@
   Julianalaan 134, Delft 2628BL, the Netherlands
 */
 
-#ifndef CompositeSolid_h
-#define CompositeSolid_h
+#ifndef COError_hpp
+#define COError_hpp
 
-#include "Primitive.h"
-#include "Solid.h"
 
 #include <vector>
+#include <map>
+#include <set>
+#include <tuple>
 #include <string>
+#include <fstream>
+#include "nlohmann-json/json.hpp"
+
+using json = nlohmann::json;
 
 namespace val3dity
 {
 
-class CompositeSolid : public Primitive 
-{
+//-- City Object Errors
+class COError {
+  std::map<int, std::vector< std::tuple< std::string, std::string > > > _errors;
 public:
-                CompositeSolid(std::string id = ""); 
-                ~CompositeSolid(); 
-
-  bool          validate(double tol_planarity_d2p, double tol_planarity_normals, double tol_overlap = -1);
-  int           is_valid();
-  bool          is_empty();
+  bool          has_errors();
+  void          add_error(int code, std::string info, std::string whichgeoms);
   json          get_report_json();
-  Primitive3D   get_type();
   std::set<int> get_unique_error_codes();
-
-  void          get_min_bbox(double& x, double& y);
-  void          translate_vertices();
-
-  Nef_polyhedron* get_nef_polyhedron();
-
-  bool          add_solid(Solid* s);
-  int           number_of_solids();
-
-protected:
-  std::vector<Solid*> _lsSolids;
-  Nef_polyhedron*     _nef;
 };
 
-} // namespace val3dity
+}
 
-#endif /* CompositeSolid_h */
+#endif /* COError_hpp */

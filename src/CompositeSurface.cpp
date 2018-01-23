@@ -1,10 +1,30 @@
-//
-//  CompositeSurface.h
-//  val3dity
-//
-//  Created by Hugo Ledoux on 2017-04-25
-//
-//
+/*
+  val3dity 
+
+  Copyright (c) 2011-2017, 3D geoinformation research group, TU Delft  
+
+  This file is part of val3dity.
+
+  val3dity is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  val3dity is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with val3dity.  If not, see <http://www.gnu.org/licenses/>.
+
+  For any information or further details about the use of val3dity, contact
+  Hugo Ledoux
+  <h.ledoux@tudelft.nl>
+  Faculty of Architecture & the Built Environment
+  Delft University of Technology
+  Julianalaan 134, Delft 2628BL, the Netherlands
+*/
 
 #include "CompositeSurface.h"
 #include "Primitive.h"
@@ -62,9 +82,9 @@ void CompositeSurface::get_min_bbox(double& x, double& y)
 }
 
 
-void CompositeSurface::translate_vertices(double minx, double miny)
+void CompositeSurface::translate_vertices()
 {
-    _surface->translate_vertices(minx, miny);
+  _surface->translate_vertices();
 }
 
 bool CompositeSurface::is_empty() {
@@ -72,37 +92,55 @@ bool CompositeSurface::is_empty() {
 }
 
 
-std::string CompositeSurface::get_report_xml() {
-  std::stringstream ss;
-  ss << "\t<CompositeSurface>" << std::endl;
+json CompositeSurface::get_report_json()
+{
+  json j;
+  bool isValid = true;
+  j["type"] = "CompositeSurface";
   if (this->get_id() != "")
-    ss << "\t\t<id>" << this->_id << "</id>" << std::endl;
+    j["id"] = this->_id;
   else
-    ss << "\t\t<id>none</id>" << std::endl;
-  ss << "\t\t<numbersurfaces>" << this->number_faces() << "</numbersurfaces>" << std::endl;
-  // ss << "\t\t<numbervertices>" << this->num_vertices() << "</numbervertices>" << std::endl;
+    j["id"] = "none";
+  j["numberfaces"] = this->num_faces();
+  j["numbervertices"] = this->num_vertices();  
   for (auto& err : _errors)
   {
     for (auto& e : _errors[std::get<0>(err)])
     {
-      ss << "\t\t<Error>" << std::endl;
-      ss << "\t\t\t<code>" << std::get<0>(err) << "</code>" << std::endl;
-      ss << "\t\t\t<type>" << errorcode2description(std::get<0>(err)) << "</type>" << std::endl;
-      ss << "\t\t\t<faces>" << std::get<0>(e) << "</faces>" << std::endl;
-      ss << "\t\t\t<info>" << std::get<1>(e) << "</info>" << std::endl;
-      ss << "\t\t</Error>" << std::endl;
+      json jj;
+      jj["type"] = "Error";
+      jj["code"] = std::get<0>(err);
+      jj["description"] = errorcode2description(std::get<0>(err));
+      jj["id"] = std::get<0>(e);
+      jj["info"] = std::get<1>(e);
+      j["errors"].push_back(jj);
+      isValid = false;
     }
   }
-  ss << _surface->get_report_xml();
-  ss << "\t</CompositeSurface>" << std::endl;
-  return ss.str();}
+  for (auto& each: _surface->get_report_json())
+    j["errors"].push_back(each); 
+  if (_surface->has_errors() == true)
+    isValid = false;
+  j["validity"] = isValid;  
+  return j;
+}
 
 
-int CompositeSurface::number_faces() 
+std::string CompositeSurface::get_off_representation()
+{
+  return _surface->get_off_representation();
+}
+
+
+int CompositeSurface::num_faces() 
 {
   return _surface->number_faces();
 }
 
+int CompositeSurface::num_vertices() 
+{
+  return _surface->number_vertices();
+}
 
 bool CompositeSurface::set_surface(Surface* s) 
 {

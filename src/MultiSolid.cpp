@@ -1,10 +1,30 @@
-//
-//  MultiSolid.cpp
-//  val3dity
-//
-//  Created by Hugo Ledoux on 25/10/16.
-//
-//
+/*
+  val3dity 
+
+  Copyright (c) 2011-2017, 3D geoinformation research group, TU Delft  
+
+  This file is part of val3dity.
+
+  val3dity is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  val3dity is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with val3dity.  If not, see <http://www.gnu.org/licenses/>.
+
+  For any information or further details about the use of val3dity, contact
+  Hugo Ledoux
+  <h.ledoux@tudelft.nl>
+  Faculty of Architecture & the Built Environment
+  Delft University of Technology
+  Julianalaan 134, Delft 2628BL, the Netherlands
+*/
 
 #include "MultiSolid.h"
 #include "input.h"
@@ -65,10 +85,10 @@ void MultiSolid::get_min_bbox(double& x, double& y)
 }
 
 
-void MultiSolid::translate_vertices(double minx, double miny)
+void MultiSolid::translate_vertices()
 {
   for (auto& s : _lsSolids)
-    s->translate_vertices(minx, miny);
+    s->translate_vertices();
 }
 
 bool MultiSolid::is_empty() 
@@ -77,32 +97,41 @@ bool MultiSolid::is_empty()
 }
 
 
-std::string MultiSolid::get_report_xml() 
+json MultiSolid::get_report_json()
 {
-    std::stringstream ss;
-  ss << "\t<MultiSolid>" << std::endl;
+  json j;
+  bool isValid = true;
+  j["type"] = "MultiSolid";
   if (this->get_id() != "")
-    ss << "\t\t<id>" << this->_id << "</id>" << std::endl;
+    j["id"] = this->_id;
   else
-    ss << "\t\t<id>none</id>" << std::endl;
-  ss << "\t\t<numbersolids>" << this->number_of_solids() << "</numbersolids>" << std::endl;
+    j["id"] = "none";
+  j["numbersolids"] = this->number_of_solids();
+  j["errors"];
   for (auto& err : _errors)
   {
     for (auto& e : _errors[std::get<0>(err)])
     {
-      ss << "\t\t<Error>" << std::endl;
-      ss << "\t\t\t<code>" << std::get<0>(err) << "</code>" << std::endl;
-      ss << "\t\t\t<type>" << errorcode2description(std::get<0>(err)) << "</type>" << std::endl;
-      ss << "\t\t\t<id>" << std::get<0>(e) << "</id>" << std::endl;
-      ss << "\t\t\t<info>" << std::get<1>(e) << "</info>" << std::endl;
-      ss << "\t\t</Error>" << std::endl;
+      json jj;
+      jj["type"] = "Error";
+      jj["code"] = std::get<0>(err);
+      jj["description"] = errorcode2description(std::get<0>(err));
+      jj["id"] = std::get<0>(e);
+      jj["info"] = std::get<1>(e);
+      j["errors"].push_back(jj);
+      isValid = false;
     }
   }
   for (auto& s : _lsSolids)
-    ss << s->get_report_xml();
-  ss << "\t</MultiSolid>" << std::endl;
-  return ss.str();
+  {
+    j["primitives"].push_back(s->get_report_json());
+    if (s->is_valid() == false)
+      isValid = false;
+  }
+  j["validity"] = isValid;
+  return j;
 }
+
 
 
 bool MultiSolid::add_solid(Solid* s) {

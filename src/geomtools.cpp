@@ -1,26 +1,29 @@
 /*
- val3dity - Copyright (c) 2011-2016, Hugo Ledoux.  All rights reserved.
- 
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions are met:
-     * Redistributions of source code must retain the above copyright
-       notice, this list of conditions and the following disclaimer.
-     * Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
-     * Neither the name of the authors nor the
-       names of its contributors may be used to endorse or promote products
-       derived from this software without specific prior written permission.
+  val3dity 
 
- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- DISCLAIMED. IN NO EVENT SHALL HUGO LEDOUX BE LIABLE FOR ANY
- DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+  Copyright (c) 2011-2017, 3D geoinformation research group, TU Delft  
+
+  This file is part of val3dity.
+
+  val3dity is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  val3dity is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with val3dity.  If not, see <http://www.gnu.org/licenses/>.
+
+  For any information or further details about the use of val3dity, contact
+  Hugo Ledoux
+  <h.ledoux@tudelft.nl>
+  Faculty of Architecture & the Built Environment
+  Delft University of Technology
+  Julianalaan 134, Delft 2628BL, the Netherlands
 */
 
 #include "geomtools.h"
@@ -32,6 +35,55 @@
 
 namespace val3dity
 {
+
+void mark_domains(CT& ct,
+  CT::Face_handle start,
+  int index,
+  std::list<CT::Edge>& border) 
+{
+  if (start->info().nesting_level != -1) {
+    return;
+  }
+  std::list<CT::Face_handle> queue;
+  queue.push_back(start);
+  while (!queue.empty()) {
+    CT::Face_handle fh = queue.front();
+    queue.pop_front();
+    if (fh->info().nesting_level == -1) {
+      fh->info().nesting_level = index;
+      for (int i = 0; i < 3; i++) {
+        CT::Edge e(fh, i);
+        CT::Face_handle n = fh->neighbor(i);
+        if (n->info().nesting_level == -1) {
+          if (ct.is_constrained(e)) border.push_back(e);
+          else queue.push_back(n);
+        }
+      }
+    }
+  }
+}
+
+//explore set of facets connected with non constrained edges,
+//and attribute to each such set a nesting level.
+//We start from facets incident to the infinite vertex, with a nesting
+//level of 0. Then we recursively consider the non-explored facets incident 
+//to constrained edges bounding the former set and increase the nesting level by 1.
+//Facets in the domain are those with an odd nesting level.
+void mark_domains(CT& ct) {
+  for (CT::All_faces_iterator it = ct.all_faces_begin(); it != ct.all_faces_end(); ++it) {
+    it->info().nesting_level = -1;
+  }
+  std::list<CT::Edge> border;
+  mark_domains(ct, ct.infinite_face(), 0, border);
+  while (!border.empty()) {
+    CT::Edge e = border.front();
+    border.pop_front();
+    CT::Face_handle n = e.first->neighbor(e.second);
+    if (n->info().nesting_level == -1) {
+      mark_domains(ct, n, e.first->info().nesting_level + 1, border);
+    }
+  }
+}  
 
 Nef_polyhedron* get_structuring_element_dodecahedron(float r)
 {
@@ -210,15 +262,40 @@ Nef_polyhedron* get_aabb(Nef_polyhedron* mynef)
 }
 
 
-bool is_face_planar_distance2plane(const std::vector<Point3> &pts, double& value, float tolerance)
+CgalPolyhedron::Plane_3  get_best_fitted_plane(const std::vector< Point3 > &lsPts)
+{
+  CgalPolyhedron::Plane_3 p;
+  linear_least_squares_fitting_3(lsPts.begin(), lsPts.end(), p, CGAL::Dimension_tag<0>());  
+  K::FT tol = 1e-12;
+  K::FT a = p.a();
+  K::FT b = p.b();
+  K::FT c = p.c();
+  bool updated = false;
+  if (CGAL::abs(p.a()) < tol) {
+    a = 0;
+    updated = true;  
+  }
+  if (CGAL::abs(p.b()) < tol) {
+    b = 0;
+    updated = true;  
+  }
+  if (CGAL::abs(p.c()) < tol) {
+    c = 0;
+    updated = true;  
+  }
+  if (updated == false)
+    return p;
+  else {
+    return CgalPolyhedron::Plane_3(a, b, c, p.d());
+  }
+}
+
+
+bool is_face_planar_distance2plane(const std::vector<Point3> &pts, const CgalPolyhedron::Plane_3 &plane, double& value, float tolerance)
 {
   if (pts.size() == 3) {
     return true;
   }
-  //-- find a fitted plane with least-square adjustment
-  CgalPolyhedron::Plane_3 plane;
-  linear_least_squares_fitting_3(pts.begin(), pts.end(), plane, CGAL::Dimension_tag<0>());  
-
   //-- test distance to that plane for each point
   std::vector<Point3>::const_iterator it = pts.begin();
   bool isPlanar = true;
@@ -236,26 +313,6 @@ bool is_face_planar_distance2plane(const std::vector<Point3> &pts, double& value
 }
 
 
-int projection_plane(const std::vector< Point3 > &lsPts, const std::vector<int> &ids)
-{
-  Vector n;
-  polygon_normal(lsPts, ids, n);
-  double maxcomp = std::abs(n.x());
-  int proj = 0;
-  if (std::abs(n.y()) > maxcomp)
-  {
-    maxcomp = std::abs(n.y());
-    proj = 1;
-  }
-  if (std::abs(n.z()) > maxcomp)
-  {
-    maxcomp = std::abs(n.z());
-    proj = 2;
-  }
-  return proj;
-}
-
-
 bool cmpPoint3(Point3 &p1, Point3 &p2, double tol)
 {
   if ( (p1 == p2) || (CGAL::squared_distance(p1, p2) <= (tol * tol)) )
@@ -265,40 +322,17 @@ bool cmpPoint3(Point3 &p1, Point3 &p2, double tol)
 }
 
 
-bool polygon_normal(const std::vector< Point3 > &lsPts, const std::vector<int> &ids, Vector &n)
+void create_cgal_polygon(const std::vector<Point3>& lsPts, const std::vector<int>& ids, const CgalPolyhedron::Plane_3 &plane, Polygon &outpgn)
 {
-  std::vector<Point3> pts;
-  for (auto& i : ids) 
-    pts.push_back(lsPts[i]);
-  CgalPolyhedron::Plane_3 plane;
-  linear_least_squares_fitting_3(pts.begin(), pts.end(), plane, CGAL::Dimension_tag<0>()); 
-  n = plane.orthogonal_vector();
-  // Vector order = CGAL::unit_normal()
-  return true;
-}  
-
-
-bool create_polygon(const std::vector<Point3>& lsPts, const std::vector<int>& ids, Polygon &pgn)
-{
-  int proj = projection_plane(lsPts, ids);
+  // int proj = projection_plane(lsPts, ids);
   std::vector<int>::const_iterator it = ids.begin();
   for ( ; it != ids.end(); it++)
   {
     Point3 p = lsPts[*it];
-    if (proj == 2)
-      pgn.push_back(Point2(p.x(), p.y()));
-    else if (proj == 1)
-      pgn.push_back(Point2(p.x(), p.z()));
-    else if (proj == 0)
-      pgn.push_back(Point2(p.y(), p.z()));
+    outpgn.push_back(plane.to_2d(p));
   }
-  
-  if (!pgn.is_simple()) //-- CGAL polygon requires that a polygon be simple to test orientation
-    return false;
-  if (pgn.orientation() == CGAL::COLLINEAR)
-    return false;
-  return true;
 }
+
 
 bool is_face_planar_normals(const std::vector<int*> &trs, const std::vector<Point3>& lsPts, double& value, float angleTolerance)
 {

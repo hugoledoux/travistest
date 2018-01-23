@@ -1,27 +1,29 @@
-
 /*
- val3dity - Copyright (c) 2011-2016, Hugo Ledoux.  All rights reserved.
- 
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions are met:
-     * Redistributions of source code must retain the above copyright
-       notice, this list of conditions and the following disclaimer.
-     * Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
-     * Neither the name of the authors nor the
-       names of its contributors may be used to endorse or promote products
-       derived from this software without specific prior written permission.
+  val3dity 
 
- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- DISCLAIMED. IN NO EVENT SHALL HUGO LEDOUX BE LIABLE FOR ANY
- DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+  Copyright (c) 2011-2017, 3D geoinformation research group, TU Delft  
+
+  This file is part of val3dity.
+
+  val3dity is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  val3dity is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with val3dity.  If not, see <http://www.gnu.org/licenses/>.
+
+  For any information or further details about the use of val3dity, contact
+  Hugo Ledoux
+  <h.ledoux@tudelft.nl>
+  Faculty of Architecture & the Built Environment
+  Delft University of Technology
+  Julianalaan 134, Delft 2628BL, the Netherlands
 */
 
 #include "validate_shell.h"
@@ -73,7 +75,7 @@ void ConstructShell<HDS>::operator()( HDS& hds)
   if (isValid)
   {
     if (B.check_unconnected_vertices() == true) {
-      sh->add_error(309);
+      // sh->add_error(309);
       B.remove_unconnected_vertices();
     }
   }
@@ -97,87 +99,6 @@ void ConstructShell<HDS>::construct_faces_order_given(CGAL::Polyhedron_increment
   }
 }
 
-//  void construct_faces_keep_adjcent(CGAL::Polyhedron_incremental_builder_3<HDS>& B, cbf cb)
-//  {
-//    //-- build a 2D-matrix of usage for each edge
-//    int size = static_cast<int>((*lsPts).size());
-//    bool halfedges[size*size];
-//    for (int i = 0; i <= (size*size); i++)
-//      halfedges[i] = false;
-//    
-//    //-- start with the first face (not only 1st triangle, first original face)
-//    std::vector< std::vector<int*> >::const_iterator itF = faces->begin();
-//    std::vector<int*>::const_iterator itF2 = itF->begin();
-//    for ( ; itF2 != itF->end(); itF2++)
-//    {
-//      int* a = *itF2;
-//      std::std::vector< std::size_t> faceids(3);        
-//      faceids[0] = a[0];
-//      faceids[1] = a[1];
-//      faceids[2] = a[2];
-//      B.add_facet(faceids.begin(), faceids.end());
-//      halfedges[m2a(a[0], a[1])] = true;
-//      halfedges[m2a(a[1], a[2])] = true;
-//      halfedges[m2a(a[2], a[0])] = true;
-//    }
-//    itF++;
-//
-//    //-- process the other faces
-//    int faceID = 0;
-//    for ( ; itF != faces->end(); itF++)
-//    {
-//      itF2 = itF->begin();
-//      for ( ; itF2 != itF->end(); itF2++)
-//      {
-//        int* a = *itF2;
-//        std::std::vector< std::size_t> faceids(3);        
-//        faceids[0] = a[0];
-//        faceids[1] = a[1];
-//        faceids[2] = a[2];
-//        if ( (B.test_facet(faceids.begin(), faceids.end()) ==  true) && (is_connected(a, halfedges) == true) )
-//        {
-//          B.add_facet(faceids.begin(), faceids.end());
-//          halfedges[m2a(a[0], a[1])] = true;
-//          halfedges[m2a(a[1], a[2])] = true;
-//          halfedges[m2a(a[2], a[0])] = true;
-//        }
-//      }
-//      faceID++;
-//    }
-//    
-//    /////////////////////////////////////////////////
-//    
-//
-//    while (trFaces.size() > 0)
-//    {
-//      bool success = false;
-//      for (list<int*>::iterator it1 = trFaces.begin(); it1 != trFaces.end(); it1++)
-//      {
-//        int* a = *it1;
-//        std::std::vector< std::size_t> faceids(3);        
-//        faceids[0] = a[0];
-//        faceids[1] = a[1];
-//        faceids[2] = a[2];
-////        cout << B.test_facet(faceids.begin(), faceids.end()) << endl;
-////        cout << is_connected(a, halfedges) << endl;
-//        if ( (B.test_facet(faceids.begin(), faceids.end()) ==  true) && (is_connected(a, halfedges) == true) )
-//        {
-//          B.add_facet(faceids.begin(), faceids.end());
-//          cout << "face added\n";
-//          halfedges[m2a(a[0],a[1])] = true;
-//          halfedges[m2a(a[1],a[2])] = true;
-//          halfedges[m2a(a[2],a[0])] = true;
-//          trFaces.erase(it1);
-//          success = true;
-//          break;
-//        }
-//      }
-//      if (success == false)
-//      {
-//        (*cb)(304, shellID, 0, "");       
-//      }
-//    }
-//  }
 
 template <class HDS>
 int ConstructShell<HDS>::m2a(int m, int n)
@@ -324,15 +245,18 @@ void ConstructShell<HDS>::add_one_face(CGAL::Polyhedron_incremental_builder_3<HD
     if (B.test_facet(faceids.begin(), faceids.end()))
       sh->add_error(307, faceID);
     else
-      sh->add_error(304, faceID); //-- >2 surfaces incident to an edge: non-manifold
+      sh->add_error(303, faceID); //-- >2 surfaces incident to an edge: non-manifold
   }
   return ;
 } 
 
-bool check_global_orientation_normals( CgalPolyhedron* p, bool bOuter)
+bool check_global_orientation_normals(CgalPolyhedron* p, bool bOuter)
 {
-  return CGAL::Polygon_mesh_processing::is_outward_oriented(*p);
-	   }
+  if (bOuter == true)
+    return CGAL::Polygon_mesh_processing::is_outward_oriented(*p);
+  else
+    return !(CGAL::Polygon_mesh_processing::is_outward_oriented(*p));
+}
 
 
 CgalPolyhedron* construct_CgalPolyhedron_batch(const std::vector< std::vector<int*> >&lsTr, const std::vector<Point3>& lsPts)

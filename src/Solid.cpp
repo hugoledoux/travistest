@@ -1,3 +1,31 @@
+/*
+  val3dity 
+
+  Copyright (c) 2011-2017, 3D geoinformation research group, TU Delft  
+
+  This file is part of val3dity.
+
+  val3dity is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  val3dity is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with val3dity.  If not, see <http://www.gnu.org/licenses/>.
+
+  For any information or further details about the use of val3dity, contact
+  Hugo Ledoux
+  <h.ledoux@tudelft.nl>
+  Faculty of Architecture & the Built Environment
+  Delft University of Technology
+  Julianalaan 134, Delft 2628BL, the Netherlands
+*/
+
 
 #include "Solid.h"
 #include "definitions.h"
@@ -69,6 +97,8 @@ int Solid::is_valid()
 
 bool Solid::is_empty()
 {
+  if (_shells.size() == 0)
+    return true;
   for (auto& sh : _shells)
   {
     if (sh->is_empty() == true)
@@ -96,16 +126,15 @@ void Solid::get_min_bbox(double& x, double& y)
 }
 
 
-void Solid::translate_vertices(double minx, double miny)
+void Solid::translate_vertices()
 {
   for (auto& sh : _shells)
-    sh->translate_vertices(minx, miny);
+    sh->translate_vertices();
 }
 
 
 bool Solid::validate(double tol_planarity_d2p, double tol_planarity_normals, double tol_overlap)
 {
-  std::clog << "- Solid validation (#" << _id << ") -" << std::endl;
   if (this->is_valid() == 0)
   {
     return false;
@@ -113,7 +142,7 @@ bool Solid::validate(double tol_planarity_d2p, double tol_planarity_normals, dou
   bool isValid = true;
   if (this->is_empty() == true)
   {
-    this->add_error(902, "", "probably error while parsing the input");
+    this->add_error(902, "", "empty Solid, contains no points and/or surfaces");
     return false;
   }
   for (auto& sh : _shells)
@@ -133,53 +162,53 @@ bool Solid::validate(double tol_planarity_d2p, double tol_planarity_normals, dou
 
 std::string Solid::get_poly_representation()
 {
-  std::ostringstream s;
+  std::ostringstream ss;
   for (auto& sh : _shells)
   {
-    s << sh->get_poly_representation() << std::endl;
+    ss << sh->get_off_representation() << std::endl;
   }
-  return s.str();
+  return ss.str();
 }
 
-std::string Solid::get_report_xml()
+std::string Solid::get_off_representation(int shellno)
 {
-  std::stringstream ss;
-  ss << "\t<Solid>" << std::endl;
+  return (_shells[shellno])->get_off_representation();
+}
+
+
+json Solid::get_report_json()
+{
+  json j;
+  j["type"] = "Solid";
   if (this->get_id() != "")
-    ss << "\t\t<id>" << this->_id << "</id>" << std::endl;
+    j["id"] = this->_id;
   else
-    ss << "\t\t<id>none</id>" << std::endl;
-  ss << "\t\t<numbershells>" << (this->num_ishells() + 1) << "</numbershells>" << std::endl;
-  ss << "\t\t<numberfaces>" << this->num_faces() << "</numberfaces>" << std::endl;
-  ss << "\t\t<numbervertices>" << this->num_vertices() << "</numbervertices>" << std::endl;
-  // if (this->_inputtype == OBJ)
-  // {
-  //   Surface* sh = this->get_oshell();
-  //   if (sh->were_vertices_merged_during_parsing() == true)
-  //     ss << "\t\t<numberverticesmerged>" << (sh->get_number_parsed_vertices() - sh->number_vertices()) << "</numberverticesmerged>" << std::endl;
-  // }
-  // if (_id_building.empty() == false)
-  //   ss << "\t\t<Building>" << this->get_id_building() << "</Building>" << std::endl;
-  // if (_id_buildingpart.empty() == false)
-  //   ss << "\t\t<BuildingPart>" << this->get_id_buildingpart() << "</BuildingPart>" << std::endl;
+    j["id"] = "none";
+  j["numbershells"] = (this->num_ishells() + 1);
+  j["numberfaces"] = this->num_faces();
+  j["numbervertices"] = this->num_vertices();
+  j["errors"];
   for (auto& err : _errors)
   {
     for (auto& e : _errors[std::get<0>(err)])
     {
-      ss << "\t\t<Error>" << std::endl;
-      ss << "\t\t\t<code>" << std::get<0>(err) << "</code>" << std::endl;
-      ss << "\t\t\t<type>" << errorcode2description(std::get<0>(err)) << "</type>" << std::endl;
-      ss << "\t\t\t<shell>" << std::get<0>(e) << "</shell>" << std::endl;
-      ss << "\t\t\t<info>" << std::get<1>(e) << "</info>" << std::endl;
-      ss << "\t\t</Error>" << std::endl;
+      json jj;
+      jj["type"] = "Error";
+      jj["code"] = std::get<0>(err);
+      jj["description"] = errorcode2description(std::get<0>(err));
+      jj["id"] = std::get<0>(e);
+      jj["info"] = std::get<1>(e);
+      j["errors"].push_back(jj);
     }
   }
   for (auto& sh : _shells)
-  {
-    ss << sh->get_report_xml();
-  }
-  ss << "\t</Solid>" << std::endl;
-  return ss.str();
+    for (auto& each: sh->get_report_json())
+      j["errors"].push_back(each); 
+  if (j["errors"].is_null() == true)
+    j["validity"] = true;
+  else 
+    j["validity"] = false;
+  return j;
 }
 
 
@@ -261,7 +290,7 @@ bool Solid::validate_solid_with_nef()
   if (this->num_ishells() == 0)
     return true;
     
-  std::clog << "-----Inspection interactions between the " << (this->num_ishells() + 1) << " shells" << std::endl;
+  std::clog << "---Inspection interactions between the " << (this->num_ishells() + 1) << " shells" << std::endl;
   std::vector<Nef_polyhedron> nefs;
   for (auto& sh : this->get_shells())
   {
@@ -306,6 +335,17 @@ bool Solid::validate_solid_with_nef()
         ss << 0 << "--" << i;
         this->add_error(401, ss.str(), "");
         isValid = false; 
+      }
+      else
+      {
+        nef = nefs[0].boundary() * nefs[i].boundary();
+        if (nef.number_of_facets() > 0)
+        {
+          std::stringstream ss;
+          ss << 0 << "--" << i;
+          this->add_error(401, ss.str(), "");
+          isValid = false;
+        }
       }
     }
   }
